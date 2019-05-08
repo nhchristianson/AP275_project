@@ -65,7 +65,7 @@ group rigids type 5 6
 
 # fix our npt ensemble
 fix nptensemble nonrigid npt temp $TEMP $TEMP $(100.0*dt) aniso $p $p $(1500.0*dt)
-fix rigidnpt rigid rigid/npt/small molecule temp $TEMP $TEMP $(100.0*dt) aniso $p $p $(1500.0*dt)
+fix rigidnpt rigids rigid/npt/small molecule temp $TEMP $TEMP $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 # print thermo data
 thermo_style custom step tpcpu temp etotal pe press vol
@@ -79,6 +79,16 @@ dump positions important custom $(1000/dt) $RUNPATH/dumpnvt.lammpstraj id type x
 # make restarts every nanosecond
 restart $(1000000/dt) $RUNPATH/restarts/restart.*.prod
 
-# let it run!
-run $(20000000/dt)
+# let it run! 4ps aniso
+run $(4000000/dt)
+
+unfix nptensemble
+unfix rigidnpt
+
+# fix our npt ensemble
+fix nptensemble2 nonrigid npt temp $TEMP $TEMP $(100.0*dt) iso $p $p $(1500.0*dt)
+fix rigidnpt2 rigids rigid/npt/small molecule temp $TEMP $TEMP $(100.0*dt) iso $p $p $(1500.0*dt)
+
+# let it run! 16ps iso
+run $(16000000/dt)
 

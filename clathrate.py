@@ -533,9 +533,8 @@ def run_production(gastype, trial, temp, run_cmd=LAMMPS_RUN):
     nvt_restart = Dir(path=os.path.join('production', gastype,
                                     'trial_{}'.format(trial), 'nvt',
                                     'restart_npt_{}.equil'.format(temp)))
-    presstype = 'iso' if temp == 290 else 'aniso'
     inparams = {'RESTARTFILE': nvt_restart.path, 'FFINPUT': globals()['{}_ff_data'.format(gastype)],
-                'TEMP': temp, 'PRESSTYPE': presstype}
+                'TEMP': temp}
     templatefile = 'templates/npt_template.txt' if gastype == 'co2' else 'templates/npt_template_ghostie.txt'
     infile = write_lammps_input(runpath=runpath,
                                 intemplate=templatefile, inparam=inparams)

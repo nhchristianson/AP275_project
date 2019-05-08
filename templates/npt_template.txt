@@ -60,7 +60,7 @@ timestep 2.5
 fix constrain all shake 1.0e-4 20 0 b 1 3 a 1 # constrain water bond/angle and co2 angle
 
 # fix our npt ensemble
-fix nptensemble all npt temp $TEMP $TEMP $(100.0*dt) $PRESSTYPE $p $p $(1500.0*dt)
+fix nptensemble all npt temp $TEMP $TEMP $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 # print thermo data
 thermo_style custom step tpcpu temp etotal pe press vol
@@ -74,6 +74,13 @@ dump positions important custom $(1000/dt) $RUNPATH/dumpnvt.lammpstraj id type x
 # make restarts every nanosecond
 restart $(1000000/dt) $RUNPATH/restarts/restart.*.prod
 
-# let it run!
-run $(20000000/dt)
+# let it run! 4ps aniso
+run $(4000000/dt)
+
+unfix nptensemble
+
+fix nptensemble2 all npt temp $TEMP $TEMP $(100.0*dt) iso $p $p $(1500.0*dt)
+
+# let it run! 16ps iso
+run $(16000000/dt)
 
