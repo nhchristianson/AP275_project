@@ -74,13 +74,7 @@ dump positions important custom $(1000/dt) $RUNPATH/dumpnvt.lammpstraj id type x
 # make restarts every nanosecond
 restart $(1000000/dt) $RUNPATH/restarts/restart.*.prod
 
-# let it run! 4ps aniso
-run $(4000000/dt)
+# let it run! 
+run $(20000000/dt)
 
-unfix nptensemble
-
-fix nptensemble2 all npt temp $TEMP $TEMP $(100.0*dt) iso $p $p $(1500.0*dt)
-
-# let it run! 16ps iso
-run $(16000000/dt)
 
