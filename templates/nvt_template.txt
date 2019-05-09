@@ -63,8 +63,8 @@ fix constrain all shake 1.0e-4 20 0 b 1 3 a 1 # constrain water bond/angle and c
 
 #initiate velocities at 200K
 velocity       all create 200 $SEED rot yes mom yes dist gaussian
-#specify the nvt ensemble
-fix            nvtensemble1 all nvt temp 200 200 $(100.0*dt)
+#specify the npt ensemble
+fix            nptensemble1 all npt temp 200 200 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 
 # print thermo data
@@ -74,14 +74,14 @@ thermo        $(1000/dt)
 # run for 1 ps
 run $(1000/dt)
 
-unfix nvtensemble1
+unfix nptensemble1
 
 reset_timestep 0
 
-timestep 2.5
+timestep 1.25
 
 
-fix            nvtensemble2 all nvt temp 200 200 $(100.0*dt)
+fix            nptensemble2 all npt temp 200 200 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 thermo_style custom step tpcpu temp etotal pe press vol
 thermo         $(1000/dt)
@@ -101,29 +101,29 @@ write_restart $RUNPATH/restart_nvt.equil
 
 # change to the npt ensemble
 
-unfix nvtensemble2
+unfix nptensemble2
 
-fix	      nptensemble all npt temp 200 280 $(100.0*dt) aniso $p $p $(1500.0*dt)
+fix	      nptensemble3 all npt temp 200 277 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 
-# run for 160 ps
-run $(160000/dt)
-write_restart $RUNPATH/restart_npt_280.equil
+# run for 154 ps
+run $(154000/dt)
+write_restart $RUNPATH/restart_npt_277.equil
 
-unfix nptensemble
+unfix nptensemble3
 
 # now heat and deposit the second restart
 
-fix	      nptensemble2 all npt temp 280 285 $(100.0*dt) aniso $p $p $(1500.0*dt)
+fix	      nptensemble4 all npt temp 277 280 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 
-run $(10000/dt)
-write_restart $RUNPATH/restart_npt_285.equil
+run $(6000/dt)
+write_restart $RUNPATH/restart_npt_280.equil
 
-unfix nptensemble2
+unfix nptensemble4
 
-fix	      nptensemble3 all npt temp 285 290 $(100.0*dt) aniso $p $p $(1500.0*dt)
+fix	      nptensemble5 all npt temp 280 283 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 
-run $(10000/dt)
-write_restart $RUNPATH/restart_npt_290.equil
+run $(6000/dt)
+write_restart $RUNPATH/restart_npt_283.equil

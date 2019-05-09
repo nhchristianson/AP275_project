@@ -47,24 +47,37 @@ $FFINPUT
 # our target pressure - 6 MPa
 variable p equal 59.2154 # 6 MPa in atmospheres - units real
 
-### BEGIN ENERGY MINIMIZATION
-dump min all atom 5 $RUNPATH/dump.atom # dump info so we can see it was ok
 
-reset_timestep 0 
-fix 1 all box/relax aniso $p vmax 1e-4
+
+dump min all atom 100 $RUNPATH/dump.atom # dump info so we can see it was ok
+
+
+fix 1 all box/relax aniso $p vmax 1e-3
+
 thermo 10 
 thermo_style custom step tpcpu temp etotal pe press vol fmax fnorm
-min_style cg 
-minimize 1e-3 1e-5 10000 100000
+min_style sd
+min_modify line quadratic
+minimize 1e-3 1e-5 1000 10000
 
+unfix 1
+fix 2 all box/relax aniso $p vmax 1e-3
 
-#the one that works for co2
-#reset_timestep 0 
-#fix 1 all box/relax aniso $p vmax 1e-4
-#thermo 10 
-#thermo_style one
-#min_style cg 
-#minimize 1e-3 1e-5 10000 100000
+thermo 10 
+thermo_style custom step tpcpu temp etotal pe press vol fmax fnorm
+min_style sd
+min_modify line quadratic
+minimize 1e-3 1e-5 1000 10000
+
+unfix 2
+fix 3 all box/relax aniso $p vmax 1e-3
+
+thermo 10 
+thermo_style custom step tpcpu temp etotal pe press vol fmax fnorm
+min_style sd
+min_modify line quadratic
+minimize 1e-3 1e-5 1000 10000
+
 
 # write a restart
 write_restart $RUNPATH/restart_min.equil

@@ -80,8 +80,8 @@ def create_clathrate(size):
     mh_super.positions[:, 1] %= (cell_len*size[1])
     #mh_super.positions = mh_super.positions % (cell_len*size)
     # scale positions based off the short minimization/nvt/npt we did
-    mh_super.cell *= 23.34/(2*cell_len)
-    mh_super.positions *= 23.34/(2*cell_len)
+    mh_super.cell *= 23.74/(2*cell_len)
+    mh_super.positions *= 23.74/(2*cell_len)
     return mh_super
 
 """
@@ -414,8 +414,8 @@ n2_ff_data = """
 pair_coeff 5 5 0.0 0.0 # Ghostie-Ghostie from N2
 pair_coeff 6 6 0.07153 3.310 # N-N from N2
 
-bond_coeff 3 500 0.55
-angle_coeff 3 500 180.0 # approximating rigidity with huge spring constant
+bond_coeff 3 10000 0.55
+angle_coeff 3 10000 180.0 # approximating rigidity with huge spring constant
 """
 
 # making the simplifying assumptions of geometric mixing and that
@@ -425,8 +425,8 @@ h2_ff_data = """
 pair_coeff 5 5 0.06816 3.038 # Ghostie-Ghostie from H2
 pair_coeff 6 6 0.0 0.0 # H-H from H2
 
-bond_coeff 3 500 0.3707
-angle_coeff 3 500 180.0 # approximating rigidity with huge spring constant
+bond_coeff 3 10000 0.3707
+angle_coeff 3 10000 180.0 # approximating rigidity with huge spring constant
 """
 
 def write_lammps_input(runpath, intemplate, inparam):
@@ -463,6 +463,8 @@ def run_minimization(gastype, trial, run_cmd=LAMMPS_RUN):
     prepare_dir(runpath.path)
     # make structure and data for it
     clath = create_clathrate(np.array([4, 2, 2]))
+
+
     if gastype == 'co2':
         clath = fill_gas(clath, 35.32, 'gas_coords/liquidco2.pdb', needs_ghostie=False)
     elif gastype == 'n2':
@@ -475,10 +477,12 @@ def run_minimization(gastype, trial, run_cmd=LAMMPS_RUN):
     struc = Struc(ase2struc(clath))
     datafile = write_lammps_data(struc, runpath)
 
+    intemplate = ('templates/minim_template_liquid.txt' if gastype == 'co2'
+                  else 'templates/minim_template_gas.txt')
 
     inparams = {'DATAINPUT': datafile.path, 'FFINPUT': globals()['{}_ff_data'.format(gastype)]}
     infile = write_lammps_input(runpath=runpath,
-                                intemplate='templates/minim_template.txt', inparam=inparams)
+                                intemplate=intemplate, inparam=inparams)
 
     logfile = File(path=os.path.join(runpath.path, 'minim.log'))
     outfile = File(path=os.path.join(runpath.path, 'minim.out'))
@@ -584,7 +588,7 @@ def main():
     # keep track of which ones you've already done
     # MINIMIZATION ONLY NEEDS TO BE DONE ONCE per gas and trial; we heat the
     # same structure up to 280, 285, and 290K
-    out1 = run_minimization('co2', 1)
+    out1 = run_nvt('n2', 1)
 
     # this runs a 20ps nvt simulation (1ps with a 1fs stepsize, then 19ps with
     # a 2.5fs stepsize) to "reduce stress" or whatever; then switches to NPT
@@ -592,11 +596,11 @@ def main():
     # file at each of those
     # this only needs to be run ONCE per gas and trial; it generates data for
     # all three temperatures
-    out2 = run_nvt('co2', 1)
+    # out2 = run_nvt('co2', 1)
 
     # this is a production run at a particular temperature. As opposed to the
     # prior two functions, you actually need to run this once for each temperature.
-    out3 = run_production('co2', 1, 280)
+    # out3 = run_production('co2', 1, 280)
 
 
 

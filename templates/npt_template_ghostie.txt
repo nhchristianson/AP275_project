@@ -56,7 +56,7 @@ variable p equal 59.2154 # 6 MPa in atmospheres - units real
 neighbor	6.0 bin
 neigh_modify	delay 0 every 1 check yes
 
-timestep 2.5
+timestep 1.25
 
 fix constrain all shake 1.0e-4 20 0 b 1 a 1 # constrain water bond/angle
 
@@ -79,7 +79,7 @@ dump positions important custom $(1000/dt) $RUNPATH/dumpnvt.lammpstraj id type x
 # make restarts every nanosecond
 restart $(1000000/dt) $RUNPATH/restarts/restart.*.prod
 
-# let it run! 4ps aniso
+# let it run! 
 run $(20000000/dt)
 
 
