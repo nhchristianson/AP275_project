@@ -53,7 +53,7 @@ variable p equal 59.2154 # 6 MPa in atmospheres - units real
 
 ### SETTINGS FOR MD
 
-neighbor	6.0 bin
+neighbor	7.0 bin
 neigh_modify	delay 0 every 1 check yes
 
 timestep 1.25

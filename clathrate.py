@@ -445,9 +445,9 @@ def write_lammps_input(runpath, intemplate, inparam):
 THIS WILL BE THE COMMAND THAT RUNS LAMMPS
 EDIT IT AS NECESSARY TO TAKE ADVANTAGE OF CERTAIN OPTIMIZATIONS
 """
-LAMMPS_RUN = "mpirun -np 4 {} -in {} -log {} > {}"
+#LAMMPS_RUN = "mpirun -np 4 {} -in {} -log {} > {}"
 # THIS IS THE VERSION THAT SHOULD BE RUN ON GOOGLE CLOUD
-# LAMMPS_RUN = "mpirun -np 2 {} -sf omp -pk omp 2 -in {} -log {} > {}"
+LAMMPS_RUN = "mpirun -np 4 {} -sf omp -pk omp 2 -in {} -log {} > {}"
 
 
 
