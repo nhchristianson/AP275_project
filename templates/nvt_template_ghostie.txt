@@ -125,7 +125,7 @@ fix	      nptensemble4 nonrigid npt temp 277 280 $(100.0*dt) aniso $p $p $(1500.
 fix	      rigidnpt4 rigids rigid/npt/small molecule temp 277 280 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 run $(10000/dt)
-write_restart $RUNPATH/restart_npt_285.equil
+write_restart $RUNPATH/restart_npt_280.equil
 
 unfix nptensemble4
 unfix rigidnpt4
@@ -134,4 +134,4 @@ fix	      nptensemble5 nonrigid npt temp 280 283 $(100.0*dt) aniso $p $p $(1500.
 fix	      rigidnpt5 rigids rigid/npt/small molecule temp 280 283 $(100.0*dt) aniso $p $p $(1500.0*dt)
 
 run $(10000/dt)
-write_restart $RUNPATH/restart_npt_290.equil
+write_restart $RUNPATH/restart_npt_283.equil
