@@ -75,6 +75,6 @@ dump positions important custom $(1000/dt) $RUNPATH/dumpnvt.lammpstraj id type x
 restart $(1000000/dt) $RUNPATH/restarts/restart.*.prod
 
 # let it run! 
-run $(20000000/dt)
+run $(15000000/dt)
 
 
