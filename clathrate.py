@@ -447,7 +447,7 @@ EDIT IT AS NECESSARY TO TAKE ADVANTAGE OF CERTAIN OPTIMIZATIONS
 """
 #LAMMPS_RUN = "mpirun -np 4 {} -in {} -log {} > {}"
 # THIS IS THE VERSION THAT SHOULD BE RUN ON GOOGLE CLOUD
-LAMMPS_RUN = "mpirun -np 4 {} -sf omp -pk omp 2 -in {} -log {} > {}"
+LAMMPS_RUN = "mpirun -np 8 {} -sf omp -pk omp 1 -in {} -log {} > {}"
 
 
 
