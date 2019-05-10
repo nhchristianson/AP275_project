@@ -85,8 +85,29 @@ def create_clathrate(size):
     return mh_super
 
 
-def create_gas(dimensions, gastype, outname):
-    pass
+def create_gas(dimensions, gastype, outname, number):
+    # creates and populates gas region to be appended to clathrate structure
+
+    runpath = Dir(path=os.path.join('gas_coords', 'gases_input'))
+    prepare_dir(runpath.path)
+
+    packmol_in = open(runpath,"{}.inp".format(gastype), "w+")
+    text = "tolerance 2.0\nfiletype pdb\n"
+    text += "output {}.pdb\n\n".format(outname)
+    text += "structure {}.pdb\n".format(gastype)
+    text += "  number {}\n".format(number)
+    text += "  inside box 2. 0. 0. "
+    text += "{} {} {}".format(dimension[0], dimensions[1], dimensions[2])
+    text += "\nend structure"
+
+    packmol_in.write(text)
+    packmol_in.close()
+
+    packmol_code = ExternalCode(path=os.eviron['PACKMOL_COMMAND'])
+    packmol_run = "{} < {}".format(packmol_code, packmol_in.path)
+
+    run_command(packmol_run)
+    print("Maybe it worked?")
 
 """
 expands the x-direction of a clathrate cell and fills
