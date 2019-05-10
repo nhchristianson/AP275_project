@@ -84,6 +84,10 @@ def create_clathrate(size):
     mh_super.positions *= 23.74/(2*cell_len)
     return mh_super
 
+
+def create_gas(dimensions, gastype, outname):
+    pass
+
 """
 expands the x-direction of a clathrate cell and fills
 with gas molecules from file
