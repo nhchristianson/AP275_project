@@ -97,7 +97,7 @@ def create_gas(dimensions, gastype, outname, number):
     text += "structure {}.pdb\n".format(gastype)
     text += "  number {}\n".format(number)
     text += "  inside box 2. 0. 0. "
-    text += "{} {} {}".format(dimension[0], dimensions[1], dimensions[2])
+    text += "{} {} {}".format(dimensions[0], dimensions[1], dimensions[2])
     text += "\nend structure"
 
     packmol_in.write(text)
