@@ -3,6 +3,10 @@ Nico Christianson and Will Weiter
 Code for APCOMP 275 final project at Harvard
 May 2019
 
+Facilitates the automated production and molecular dynamics simulation of
+methane clathrate structures interfaced with various gases, for the study of
+methane recovery and gas sequestration in the clathrates.
+
 """
 
 import ase
@@ -22,13 +26,14 @@ rev_dict = {}
 """
 Creates a methane clathrate structure as an ASE cell
 
-Size can be either an integer (if you want a cubic structure) or a list
-of three elements (corresponding to x, y, and z dimensions)
+size: gives number of unit cells in each dimension; can be either an integer
+    (if you want a cubic structure) or a numpy array
+    of three elements (corresponding to x, y, and z dimensions)
 
 """
 def create_clathrate(size):
     x = io.read('jp111328v_si_001.cif')
-    # need to reorder things, so read the cif file to do so
+    # need to reorder things for the tip4p water model, so read the cif file to do so
     with open('jp111328v_si_001.cif') as f:
         txt = f.readlines()
     read = False
@@ -42,8 +47,8 @@ def create_clathrate(size):
         else:
             continue
     # now we reorder, because we need our water molecules to list O
-    # first, followed by the two Hs
-    # We also replace methane hydrogens with S as a placeholder
+    # first, followed by the two Hs, for the tip4p model
+    # We also replace methane hydrogens with S as a placeholder in ase
     acc = x[0:1]
     acc.append(x[nums[0]-1])
     acc.append(x[nums[1]-1])
@@ -58,7 +63,8 @@ def create_clathrate(size):
             new_xi = x[i]
             new_xi.symbol = 'S' # replace methane hydrogen with s as placeholder
             acc.append(new_xi)
-    # now let's create our supercell
+    # now let's create our supercell; need to use cut in order to make sure
+    # atoms aren't removed
     cell_len = acc.cell[0, 0]
     m = np.identity(3) * size
     mh_super = cut(acc, m[0], m[1], m[2], tolerance=1e-5)
@@ -78,8 +84,7 @@ def create_clathrate(size):
         i += natoms
     mh_super.positions[:, 1] += cell_len/2
     mh_super.positions[:, 1] %= (cell_len*size[1])
-    #mh_super.positions = mh_super.positions % (cell_len*size)
-    # scale positions based off the short minimization/nvt/npt we did
+    # scale positions based off Tung et al, 2011
     mh_super.cell *= 23.74/(2*cell_len)
     mh_super.positions *= 23.74/(2*cell_len)
     return mh_super
@@ -88,8 +93,12 @@ def create_clathrate(size):
 expands the x-direction of a clathrate cell and fills
 with gas molecules from file
 
-currently assumes co2 (actually should be fine with whatever gas)
-needs_ghostie tell us if we need to add a ghostie atom
+clath: the ase clathrate structure
+vac_size: length of the vacuum in the x-direction in angstroms
+gas_pos_file: file directory of the gas positions to fill in
+needs_ghostie: tells us whether we're using a linear gas model (such as
+    n2 or h2) which requires the creation of a ghost atom in the center for
+    charge reasons
 """
 def fill_gas(clath, vac_size, gas_pos_file, needs_ghostie):
     original_xdim = clath.cell[0, 0].copy()
@@ -144,7 +153,6 @@ def fill_gas(clath, vac_size, gas_pos_file, needs_ghostie):
                 i += 2
             else:
                 i += 1
-        # be sure to add ghostie to the relevant dicts
     else:
         for line in lines:
             if line.startswith('ATOM'):
@@ -168,8 +176,13 @@ def fill_gas(clath, vac_size, gas_pos_file, needs_ghostie):
 
 
 """
-write a lammps data topology file from a struc
-long stuff
+write a lammps data topology file from an ase struc
+has to replace ase placeholders with what should be the actual masses/kinds
+also needs to infer and write bond and angle data, which was not included in the
+cif or pdb files explicitly, and which ase doesn't give
+
+struc: ase struc to convert
+runpath: runpath to dump the file to
 
 """
 def write_lammps_data(struc, runpath):
@@ -187,7 +200,8 @@ def write_lammps_data(struc, runpath):
         else:
             struc.species[fake] = {'mass': ase.Atom(placeholder_dict[fake]).mass,
                                    'kind': 5 + i} # make the ol' switcheroo
-    # gotta real quick start by computing bond and angle info. thankfully no dihedrals
+    # gotta real quick start by computing bond and angle info.
+    # bond info:
     btxt = '\nBonds\n\n'
     i = 0
     bond_ind = 1
@@ -245,8 +259,8 @@ def write_lammps_data(struc, runpath):
             bond_ind += 2
             i += 3
         else:
-            raise Exception('bond problem!')
-
+            raise Exception('bond type not implemented!')
+    # angle info:
     atxt = '\nAngles\n\n'
     i = 0
     angle_ind = 1
@@ -302,8 +316,8 @@ def write_lammps_data(struc, runpath):
             angle_ind += 1
             i += 3
         else:
-            raise Exception('angle problem!')
-
+            raise Exception('angle type not implemented!')
+    # now that we know how many bonds and angles we have, let's write the header:
     datatxt = 'Header of the LAMMPS data file \n\n'
     datatxt += '{} atoms \n'.format(struc.n_atoms)
     datatxt += '{} bonds \n'.format(bond_ind-1)
@@ -324,7 +338,7 @@ def write_lammps_data(struc, runpath):
     for mass, kind in sorted([tuple(x.values()) for x in struc.species.values()],
                           key=lambda x: x[1]):
         datatxt += '{}  {}\n'.format(kind, mass)
-    # Write atom positions in angstrom
+    # Write atom positions in angstroms
     datatxt += '\nAtoms # atomic \n\n'
     i = 0
     mol_id = 1
@@ -381,7 +395,7 @@ def write_lammps_data(struc, runpath):
             i += 3
             mol_id += 1
         else:
-            raise Exception('atom problem!')
+            raise Exception('atom type not implemented!')
 
 #     for index, site in enumerate(struc.positions):
 #         datatxt += '{} {} {:1.5f} {:1.5f} {:1.5f} \n'.format(index + 1, struc.species[site[0]]['kind'], *site[1])
@@ -394,7 +408,12 @@ def write_lammps_data(struc, runpath):
     write_file(datafile, datatxt)
     return File(path=datafile)
 
+"""
+Below, we have the force field data for co2, n2, and h2. explicit inter-atom-type
+parameters are given for the interactions between co2 and h2o based off the parameters
+used by tung et al. 2011
 
+"""
 co2_ff_data = """
 pair_coeff 5 5 0.559 2.757 # C-C from CO2
 pair_coeff 6 6 0.1600 3.033 # O-O from CO2
@@ -402,14 +421,21 @@ pair_coeff 5 6 0.09512 2.892 # C-O from CO2
 pair_coeff 3 5 0.10612 2.955 #c from co2 - o from h2o
 pair_coeff 2 5 0.04995 2.400 #c from co2 - h from h2o
 pair_coeff 3 6 0.1790 3.034 #o from h2o - o from co2
-pair_coeff 2 6 0.0851 2.480 # h from h2o - o from
+pair_coeff 2 6 0.0851 2.480 # h from h2o - o from co2
 
 bond_coeff 3 0.0 1.149 # co2
 angle_coeff 3 295.411 180.0 # co2
 """
 
-# making the simplifying assumptions of geometric mixing and that
-# angle rigidity at 180 degrees is accomplishable with a big spring constant!
+"""
+We still assume geometric mixing with this trappe model; also, keep it as a rigid body
+(tradeoffs here? recreates phase diagram well, seems worthwhile for when dealing with
+gaseous and potential clathrate phase)
+
+we set really high spring constants for bond and angle to ensure minimial distortion
+during the minimization procedure, before they're made rigid
+
+"""
 n2_ff_data = """
 pair_coeff 5 5 0.0 0.0 # Ghostie-Ghostie from N2
 pair_coeff 6 6 0.07153 3.310 # N-N from N2
@@ -418,9 +444,10 @@ bond_coeff 3 10000 0.55
 angle_coeff 3 10000 180.0 # approximating rigidity with huge spring constant
 """
 
-# making the simplifying assumptions of geometric mixing and that
-# angle rigidity at 180 degrees is accomplishable with a big spring constant!
-# alavi et al
+"""
+same caveats apply here as for n2 - rigid model by alavi et al.
+
+"""
 h2_ff_data = """
 pair_coeff 5 5 0.06816 3.038 # Ghostie-Ghostie from H2
 pair_coeff 6 6 0.0 0.0 # H-H from H2
@@ -429,6 +456,14 @@ bond_coeff 3 10000 0.3707
 angle_coeff 3 10000 180.0 # approximating rigidity with huge spring constant
 """
 
+"""
+creates the lammps input file based off the relevant template in the templates folder
+
+runpath: self-explanatory
+intemplate: path for the template for the input file
+inparam: extra parameters to substitute into the template
+
+"""
 def write_lammps_input(runpath, intemplate, inparam):
     subst = {'RUNPATH': runpath.path}
 
@@ -443,16 +478,17 @@ def write_lammps_input(runpath, intemplate, inparam):
 
 """
 THIS WILL BE THE COMMAND THAT RUNS LAMMPS
-EDIT IT AS NECESSARY TO TAKE ADVANTAGE OF CERTAIN OPTIMIZATIONS
+EDIT IT AS NECESSARY TO TAKE ADVANTAGE OF CERTAIN OPTIMIZATIONS/MULTITHREADING
 """
 #LAMMPS_RUN = "mpirun -np 4 {} -in {} -log {} > {}"
 # THIS IS THE VERSION THAT SHOULD BE RUN ON GOOGLE CLOUD
 LAMMPS_RUN = "mpirun -np 8 {} -sf omp -pk omp 1 -in {} -log {} > {}"
 
 
+"""
+Creates a structure file for the particular gas type
 
-# minimization for a particular gas and trial number
-# first thing that should be run
+"""
 def run_minimization(gastype, trial, run_cmd=LAMMPS_RUN):
     print('Begin clathrate-{} minimization'.format(gastype))
     lammps_code = ExternalCode(path=os.environ['LAMMPS_COMMAND'])
@@ -539,7 +575,7 @@ def run_production(gastype, trial, temp, run_cmd=LAMMPS_RUN):
                                     'restart_npt_{}.equil'.format(temp)))
     inparams = {'RESTARTFILE': nvt_restart.path, 'FFINPUT': globals()['{}_ff_data'.format(gastype)],
                 'TEMP': temp}
-    templatefile = 'templates/npt_template.txt' if gastype == 'co2' else 'templates/npt_template_ghostie.txt'
+    templatefile = 'templates/production_template.txt' if gastype == 'co2' else 'templates/production_template_ghostie.txt'
     infile = write_lammps_input(runpath=runpath,
                                 intemplate=templatefile, inparam=inparams)
     logfile = File(path=os.path.join(runpath.path, 'npt_{}.log'.format(temp)))
