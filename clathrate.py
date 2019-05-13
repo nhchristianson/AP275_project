@@ -89,7 +89,11 @@ def create_clathrate(size):
     mh_super.positions *= 23.74/(2*cell_len)
     return mh_super
 
+"""
+code to automatedly create a box of gas for appending to the clathrate cell
+still in testing
 
+"""
 def create_gas(dimensions, gastype, outname, number):
     # creates and populates gas region to be appended to clathrate structure
 
