@@ -251,5 +251,5 @@ def bin_avg_matrix(matrix):
     rest = matrix[1:]
     res = np.zeros((int((matrix.shape[0]-1)/100), shape[1]))
     for i in range(int((matrix.shape[0]-1)/100)):
-        res[i] = rest[i:(i+1)*int((matrix.shape[0]-1)/100)].mean(axis=0)
+        res[i] = rest[i*100:(i+1)*100].mean(axis=0)
     return res
