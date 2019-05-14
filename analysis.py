@@ -19,8 +19,7 @@ Loads the trajectory of a particular production run
 """
 def load_run(gas, trialnum, temp):
     directory = 'production/{}/trial_{}/{}K/dump.lammpstraj'.format(gas, trialnum, temp)
-    u = mda.Universe('production/co2/trial_1/280K/dump.lammpstraj',
-                     format='lammpsdump')
+    u = mda.Universe(directory, format='lammpsdump')
     return u
 
 """
@@ -136,7 +135,16 @@ class AOPAnalysis(ParallelAnalysisBase):
         # sensible new variable.
         self.results = np.vstack(self._results)
 
-import matplotlib.pyplot as plt
+def aop_bins(aops):
+    heat = np.zeros((aops.shape[0], 8))
+    for i, aop in enumerate(aops):
+        aop = aop[~np.isnan(aop).any(axis=1)]
+        aop = aop[~(aop == 1).any(axis=1)]
+        aop = aop[~(aop == 0.1).any(axis=1)]
+        left, right = np.min(aop[:, 0]), np.max(aop[:, 0])
+        #print(i, left, right)
+        heat[i] = stats.binned_statistic(aop[:, 0], aop[:, 1], bins=8)[0]
+    return heat
 
 # tells how many methanes are (a) in the water region, (b) surrounded
 # by non-clathrate waters, and (c) surrounded by clathrate waters
@@ -144,13 +152,17 @@ import matplotlib.pyplot as plt
 def gas_count(gas_sel, aops, ts):
     oxy_sel = gas_sel.universe.select_atoms('type 3')
     # bounds as determined by AOP
-    left, right = np.nanmin(aops[:, 0]), np.nanmax(aops[:, 0])
+    aop = aops[~np.isnan(aops).any(axis=1)]
+    aop = aop[~(aop == 1).any(axis=1)]
+    aop = aop[~(aop == 0.1).any(axis=1)]
+
+
     # wrap the atom positions so water box is centered as in AOP
     ts1 = center_in_box(oxy_sel, wrap=True)(ts)
     oxy_sel.universe.atoms.wrap()
 
-    plt.scatter(np.array(oxy_sel.universe.atoms.types, dtype='float'),
-                oxy_sel.universe.atoms.positions[:, 0])
+    #left, right = np.min(aop[:, 0]), np.max(aop[:, 0])
+    left, right = np.min(oxy_sel.positions[:, 0]), np.max(oxy_sel.positions[:, 0])
 
     # start by determining counts of gas in each of 8 bins
     gas_pos = gas_sel.positions[:, 0]
@@ -214,3 +226,30 @@ class GasCountAnalysis(ParallelAnalysisBase):
         # basis. Here those results should be moved and reshaped into a
         # sensible new variable.
         self.results = np.vstack(self._results)
+
+"""
+function to aggregate a metric over the three trials
+aka takes the mean over all three trials of binned data
+
+"""
+def aggregate(metric, gas, temp):
+    if metric == 'aop':
+        data = []
+        for trial in range(1, 4):
+            aop = np.load('production/{}/trial_{}/{}K/aop.npy'.format(gas, trial, temp))
+            data.append(aop_bins(aop))
+    else:
+        data = []
+        for trial in range(1, 4):
+            met = np.load('production/{}/trial_{}/{}K/{}.npy'.format(gas, trial, temp, metric))
+            data.append(met)
+    return np.stack(data).mean(axis=0)
+
+
+def bin_avg_matrix(matrix):
+    shape = matrix.shape
+    rest = matrix[1:]
+    res = np.zeros((int((matrix.shape[0]-1)/100), shape[1]))
+    for i in range(int((matrix.shape[0]-1)/100)):
+        res[i] = rest[i:(i+1)*int((matrix.shape[0]-1)/100)].mean(axis=0)
+    return res
